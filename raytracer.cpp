@@ -274,7 +274,7 @@ void renderImage(Image *img, Scene *scene) {
 		for(size_t i=0; i<img->width+1; i++) {
 			vec3 ray_dir = scene->cam.center + ray_delta_x + ray_delta_y + float(i)*dx + float(j)*dy;
 			Ray rx;
-			rayInit(&rx, scene->cam.position, normalize(ray_dir),0,TMAX,3);
+			rayInit(&rx, scene->cam.position, normalize(ray_dir),0,TMAX,1);
 			c[i+j*(img->width+1)] = trace_ray(scene, &rx, tree);
 		}
 	}
