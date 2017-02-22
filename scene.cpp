@@ -35,6 +35,17 @@ Object* initCylinder(vec3 direction, point3 center, float radius, float length, 
     return ret;
 }
 
+Object* initTriangle(point3 a, point3 b, point3 c, Material mat){
+    Object *ret;
+    ret=(Object*)malloc(sizeof(Object));
+    ret->geom.type=TRIANGLE;
+    ret->geom.triangle.a=a;
+    ret->geom.triangle.b=b;
+    ret->geom.triangle.c=c;
+    memcpy(&(ret->mat),&mat,sizeof(Material));
+    return ret;
+}
+
 void freeObject(Object *obj) {
     free(obj);
 }

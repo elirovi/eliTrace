@@ -7,7 +7,7 @@
 #include "ray.h"
 
 //! An intersection contains all the information to shade an intersection point.
-typedef struct intersection_s { 
+typedef struct intersection_s {
   vec3 normal; //! the normal of the intersection point
   point3 position; //! the intersection point
   Material *mat; //! the material of th intersected object
@@ -21,6 +21,7 @@ bool intersectScene(const Scene *scene, Ray *ray, Intersection *intersection );
 bool intersectCylinder (Ray *ray, Intersection *intersection, Object *cylinder);
 bool intersectPlane(Ray *ray, Intersection *intersection, Object *plane);
 bool intersectSphere(Ray *ray, Intersection *intersection, Object *sphere);
+bool intersectTriangle(point3 a, point3 b, point3 c);
 
 void renderImage(Image *img, Scene *scene);
 

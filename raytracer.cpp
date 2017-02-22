@@ -29,19 +29,17 @@ bool intersectPlane(Ray *ray, Intersection *intersection, Object *obj) {
 }
 
 bool intersectSphere(Ray *ray, Intersection *intersection, Object *obj) {
-
 	//! \todo : compute intersection of the ray and the sphere object
 	vec3 co= ray->orig-obj->geom.sphere.center;
 
 	float r=obj->geom.sphere.radius, b=2.0*dot(ray->dir,co), c=dot(co,co)-r*r,
 		delta=b*b-4.0*c;
 	float t1,t2;
-	if(delta<0) return false;
-	else{
-		t1=(-b+sqrt(delta))/2.f;
-		t2=(-b-sqrt(delta))/2.f;
-	}
+	if(delta<0)
+		return false;
 	float t;
+	t1=(-b+sqrt(delta))/2.f;
+	t2=(-b-sqrt(delta))/2.f;
 	if(t1*t2<0) t= t1<t2? t2:t1;
 	else t= t1<t2? t1:t2;
 	if(t<=ray->tmin || t>ray->tmax)
@@ -102,6 +100,11 @@ bool intersectCylinder(Ray *ray, Intersection *intersection, Object *obj){
 	return true;
 }
 
+bool intersectTriangle(Ray *ray, Intersection *intersection, Object *obj){
+	vec3 p0p1, p0p2, p0o;
+	return false;
+}
+
 bool intersectScene(const Scene *scene, Ray *ray, Intersection *intersection) {
 	bool hasIntersection = false;
 	int objectCount = scene->objects.size();
@@ -116,6 +119,9 @@ bool intersectScene(const Scene *scene, Ray *ray, Intersection *intersection) {
 			break;
 			case CYLINDER:
 				hasIntersection|=intersectCylinder(ray,intersection,scene->objects[i]);
+			break;
+			case TRIANGLE:
+				hasIntersection|=intersectTriangle(ray,intersection,scene->objects[i]);
 			break;
 			default:break;
 		}
@@ -274,7 +280,7 @@ void renderImage(Image *img, Scene *scene) {
 		for(size_t i=0; i<img->width+1; i++) {
 			vec3 ray_dir = scene->cam.center + ray_delta_x + ray_delta_y + float(i)*dx + float(j)*dy;
 			Ray rx;
-			rayInit(&rx, scene->cam.position, normalize(ray_dir),0,TMAX,1);
+			rayInit(&rx, scene->cam.position, normalize(ray_dir),0,TMAX,3);
 			c[i+j*(img->width+1)] = trace_ray(scene, &rx, tree);
 		}
 	}
