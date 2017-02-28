@@ -1,14 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include "defines.h"
 #include "ray.h"
 #include "scene.h"
 #include "raytracer.h"
 #include "image.h"
 
-#define WIDTH 3000
-#define HEIGHT 1200
+#define WIDTH 1080
+#define HEIGHT 720
 
 /* nickel :
  mat.diffuseColor = color3(0.014, 0.012, 0.012);
@@ -302,6 +303,7 @@ int main(int argc, char *argv[]) {
 	printf("Welcome to the L3 IGTAI RayTracer project\n");
 
 	char basename[256];
+	srand(time(NULL));
 
 	if(argc<2 || argc >3) {
 		printf("usage : %s filename [i]\n", argv[0]);

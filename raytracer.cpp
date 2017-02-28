@@ -35,7 +35,7 @@ bool intersectSphere(Ray *ray, Intersection *intersection, Object *obj) {
 	float r=obj->geom.sphere.radius, b=2.0*dot(ray->dir,co), c=dot(co,co)-r*r,
 		delta=b*b-4.0*c;
 	float t1,t2;
-	if(delta<0)
+	if(delta<=0)
 		return false;
 	float t;
 	t1=(-b+sqrt(delta))/2.f;
@@ -211,7 +211,7 @@ color3 RDM_bsdf_d(Material *m) {
 // compute bsdf * cos(Oi)
 color3 RDM_bsdf(float LdotH, float NdotH, float VdotH, float LdotN, float VdotN, Material *m){
 	//! \todo compute bsdf diffuse and specular term
-	return RDM_bsdf_d(m)+RDM_bsdf_s(LdotH,NdotH,VdotH,LdotN,VdotN,m);
+	return clamp(RDM_bsdf_d(m)+RDM_bsdf_s(LdotH,NdotH,VdotH,LdotN,VdotN,m),0.f,1.f);
 }
 
 /* --------------------------------------------------------------------------- */
@@ -230,8 +230,8 @@ color3 trace_ray(Scene * scene, Ray *ray, KdTree *tree) {
 	color3 ret = scene->skyColor;
 	Intersection intersection;
 	if(intersectScene(scene, ray, &intersection)){
-		if(intersection.mat->diffuseColor==color3(0.03, 0.3, 0.03))
-			return intersection.normal;
+		//if(intersection.mat->diffuseColor==color3(0.03, 0.3, 0.03))
+		//	return intersection.normal;
 		ret=color3(0.f);
 		point3 P=intersection.position;
 		for(unsigned int i=0;i<scene->lights.size();i++){
@@ -251,6 +251,11 @@ color3 trace_ray(Scene * scene, Ray *ray, KdTree *tree) {
 	return ret;
 }
 
+float plusOuMoins(float f){
+	float r= (float)rand()/RAND_MAX;
+	return f+(r/3.f-1.f/6.f);
+}
+
 void renderImage(Image *img, Scene *scene) {
 	//! This function is already operational, you might modify it for antialiasing and kdtree initializaion
 	float aspect = 1.f/scene->cam.aspect;
@@ -267,24 +272,6 @@ void renderImage(Image *img, Scene *scene) {
 	vec3 dx = delta_x * scene->cam.xdir;
 	vec3 ray_delta_x = (0.5f - img->width * 0.5f) / (img->width * 0.5f) *scene->cam.xdir;
 
-	color3 *c= (color3*)malloc((img->width+1)*(img->height+1)*sizeof(color3));
-	for(size_t j=0; j<img->height+1; j++){
-		if(j!=0) printf("\033[A\r");
-		float progress = (float)j/img->height*100.f;
-		printf("progress\t[");
-		int cpt = 0;
-		for(cpt = 0; cpt<progress; cpt+=5) printf("-");
-		for(       ; cpt<100; cpt+=5) printf(" ");
-		printf("]\n");
-		#pragma omp parallel for
-		for(size_t i=0; i<img->width+1; i++) {
-			vec3 ray_dir = scene->cam.center + ray_delta_x + ray_delta_y + float(i)*dx + float(j)*dy;
-			Ray rx;
-			rayInit(&rx, scene->cam.position, normalize(ray_dir),0,TMAX,3);
-			c[i+j*(img->width+1)] = trace_ray(scene, &rx, tree);
-		}
-	}
-	printf("Antialiasing\n");
 	for(size_t j=0; j<img->height; j++){
 		if(j!=0) printf("\033[A\r");
 		float progress = (float)j/img->height*100.f;
@@ -294,10 +281,16 @@ void renderImage(Image *img, Scene *scene) {
 		for(       ; cpt<100; cpt+=5) printf(" ");
 		printf("]\n");
 		#pragma omp parallel for
-		for(size_t i=0; i<img->width; i++) {
+		for(size_t i=0; i<img->width; i++){
+			Ray rx;
+			color3 c=color3(0);
+			for(int x=0;x<9;x++){
+				vec3 ray_dir = scene->cam.center + ray_delta_x + ray_delta_y + float(i+plusOuMoins(((x%3)-1)/3.f))*dx + float(j+plusOuMoins(((x/3)-1)/3.f))*dy;
+				rayInit(&rx, scene->cam.position, normalize(ray_dir),0,TMAX,3);
+				c+= trace_ray(scene,&rx,tree);
+			}
 			color3 *ptr = getPixelPtr(img, i,j);
-			*ptr = (c[i+j*(img->width+1)]+c[(i+1)+j*(img->width+1)]+c[i+(j+1)*(img->width+1)]+c[(i+1)+(j+1)*(img->width+1)])/4.f;
+			*ptr = c/9.f;
 		}
 	}
-	free(c);
 }
