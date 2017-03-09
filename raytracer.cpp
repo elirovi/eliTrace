@@ -6,6 +6,7 @@
 #include <stdio.h>
 float pi=M_PI;
 float IOR=1;
+#define ANTIA 3.f
 #define TMAX 100000
 
 /// acne_eps is a small constant used to prevent acne when computing intersection
@@ -58,25 +59,23 @@ bool intersectCylinder(Ray *ray, Intersection *intersection, Object *obj){
 	vec3 C = obj->geom.cylinder.center;
 	float r = obj->geom.cylinder.radius;
 	vec3 d= ray->dir-dot(ray->dir,D)*D;
-	vec3 dp= ray->orig-C;
+	point3 dp= ray->orig-C;
 	vec3 cc=dp-dot(dp,D)*D;
 	float a= dot(d,d),
-		b=2.f*dot(d,dp-dot(dp,D)*D),
+		b=2.f*dot(d,cc),
 		c= dot(cc,cc)-r*r;
-	float delta = b*b -4.f*a*c;
-	float t1,t2;
+	float delta = b*b -4.f*a*c,
+		t1,t2;
 	if(delta<0) return false;
-	else{
-		t1=(-b+sqrt(delta))/(2.0*a);
-		t2=(-b-sqrt(delta))/(2.0*a);
-	}
+	t1=(-b+sqrt(delta))/(2.0*a);
+	t2=(-b-sqrt(delta))/(2.0*a);
 	float t;
 	if(t1*t2<0) t= t1<t2? t2:t1;
 	else t= t1<t2? t1:t2;
 	if(t<=ray->tmin || t>ray->tmax)
 		return false;
 	point3 P=rayAt(*ray,t);
-	point3 pc=C+((dot(P-C,D))/dot(D,D))*D;
+	point3 pc=C+(dot(P-C,D)/dot(D,D))*D;
 	float l=obj->geom.cylinder.length/2;
 	if(length(pc-C)>l){
 		Ray rTest; Intersection iTest;
@@ -100,9 +99,52 @@ bool intersectCylinder(Ray *ray, Intersection *intersection, Object *obj){
 	return true;
 }
 
-bool intersectTriangle(Ray *ray, Intersection *intersection, Object *obj){
-	vec3 p0p1, p0p2, p0o;
-	return false;
+float cos2(float f){
+	return .5+.5*cos(2.f*f);
+}
+float sin2(float f){
+	return .5-.5*cos(2.f*f);
+}
+
+bool intersectCone(Ray *ray, Intersection *intersection, Object *obj){
+	float alpha=obj->geom.cone.alpha;
+	point3 dp=ray->orig-obj->geom.cone.top;
+	vec3 va=normalize(obj->geom.cone.base-obj->geom.cone.top);
+	vec3 v1=ray->dir-dot(ray->dir,va)*va,
+		 v2=dp-dot(dp,va)*va;
+	float a=cos2(alpha)*dot(v1,v1)-sin2(alpha)*dot(ray->dir,va)*dot(ray->dir,va),
+		  b=2.f*cos2(alpha)*dot(v1,v2)-2.f*sin2(alpha)*dot(ray->dir,va)*dot(dp,va),
+		  c=cos2(alpha)*dot(v2,v2)-sin2(alpha)*dot(dp,va)*dot(dp,va);
+	float delta=b*b-4.f*a*c, t,t1,t2;
+	if(delta<0) return false;
+	t1=(-b+sqrt(delta))/(2.0*a);
+	t2=(-b-sqrt(delta))/(2.0*a);
+	if(t1*t2<0) t= t1<t2? t2:t1;
+	else t= t1<t2? t1:t2;
+	if(t<=ray->tmin || t>ray->tmax)
+		return false;
+	point3 P=rayAt(*ray,t);
+	point3 pc=obj->geom.cone.top+(dot(P-obj->geom.cone.top,va)/dot(va,va))*va;
+	if(dot(va,pc-obj->geom.cone.top)<=0)
+		return false;
+	float l = length(obj->geom.cone.top-obj->geom.cone.base);
+	if(length(pc-obj->geom.cone.top)>l){
+		Ray rTest; Intersection iTest;
+		rayInit(&rTest,ray->orig,ray->dir);
+		if(intersectPlane(&rTest, &iTest, initPlane(va,-dot(va,obj->geom.cone.base),obj->mat))&&length(obj->geom.cone.base-iTest.position)<=tan(alpha)*l){
+			ray->tmax=length(iTest.position-ray->orig)/length(ray->dir);
+			intersection->position=iTest.position;
+			intersection->normal=iTest.normal;
+			intersection->mat=&(obj->mat);
+			return true;
+		}
+		return false;
+	}
+	intersection->normal=normalize(P-pc);
+	intersection->position=P+acne_eps*intersection->normal;
+	intersection->mat=&(obj->mat);
+	ray->tmax=t;
+	return true;
 }
 
 bool intersectScene(const Scene *scene, Ray *ray, Intersection *intersection) {
@@ -120,8 +162,8 @@ bool intersectScene(const Scene *scene, Ray *ray, Intersection *intersection) {
 			case CYLINDER:
 				hasIntersection|=intersectCylinder(ray,intersection,scene->objects[i]);
 			break;
-			case TRIANGLE:
-				hasIntersection|=intersectTriangle(ray,intersection,scene->objects[i]);
+			case CONE:
+				hasIntersection|=intersectCone(ray,intersection,scene->objects[i]);
 			break;
 			default:break;
 		}
@@ -222,7 +264,7 @@ color3 shade(vec3 n, vec3 v, vec3 l, color3 lc, Material *mat){
 		return color3(0.f);
 	vec3 h= normalize((v+l)/length(v+l));
 	float LdotH=dot(l,h), NdotH=dot(n,h), VdotH=dot(v,h), LdotN=dot(l,n), VdotN=dot(v,n);
-	return lc*RDM_bsdf(LdotH,NdotH,VdotH,LdotN,VdotN,mat)*LdotN;
+	return clamp(lc*RDM_bsdf(LdotH,NdotH,VdotH,LdotN,VdotN,mat)*LdotN,0.f,1.f);
 }
 
 //! if tree is not null, use intersectKdTree to compute the intersection instead of intersect scene
@@ -248,12 +290,12 @@ color3 trace_ray(Scene * scene, Ray *ray, KdTree *tree) {
 			ret+=RDM_Fresnel(dot(ref,intersection.normal),IOR,intersection.mat->IOR)*trace_ray(scene,ray,tree);
 		}
 	}
-	return ret;
+	return clamp(ret,0.f,1.f);
 }
 
-float plusOuMoins(float f){
+float plusOuMoins(){
 	float r= (float)rand()/RAND_MAX;
-	return f+(r/3.f-1.f/6.f);
+	return r/ANTIA-1.f/(ANTIA*2.f);
 }
 
 void renderImage(Image *img, Scene *scene) {
@@ -284,13 +326,13 @@ void renderImage(Image *img, Scene *scene) {
 		for(size_t i=0; i<img->width; i++){
 			Ray rx;
 			color3 c=color3(0);
-			for(int x=0;x<9;x++){
-				vec3 ray_dir = scene->cam.center + ray_delta_x + ray_delta_y + float(i+plusOuMoins(((x%3)-1)/3.f))*dx + float(j+plusOuMoins(((x/3)-1)/3.f))*dy;
+			for(int x=0;x<ANTIA*ANTIA;x++){
+				vec3 ray_dir = scene->cam.center + ray_delta_x + ray_delta_y + float(i+plusOuMoins()+((x%int(ANTIA))-1)/ANTIA)*dx + float(j+plusOuMoins()+((x/int(ANTIA))-1)/ANTIA)*dy;
 				rayInit(&rx, scene->cam.position, normalize(ray_dir),0,TMAX,3);
 				c+= trace_ray(scene,&rx,tree);
 			}
 			color3 *ptr = getPixelPtr(img, i,j);
-			*ptr = c/9.f;
+			*ptr = c/(ANTIA*ANTIA);
 		}
 	}
 }

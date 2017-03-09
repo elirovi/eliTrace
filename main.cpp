@@ -280,21 +280,34 @@ Scene* initScene4(){
 	mat.IOR = 2.8;
 	mat.roughness = 0.0886;
 
-	addLight(scene, initLight(point3(25, 0, 0), color3(3,3,3)));
-	addLight(scene, initLight(point3(0, 25, 0),color3(4, 4, 4)));
-	addLight(scene, initLight(point3(0, 0, 25), color3(3, 3, 3)));
+	addLight(scene, initLight(point3(25, 0, 0), color3(1,1,1)));
+	addLight(scene, initLight(point3(25, 25, 0),color3(1, 1, 1)));
+	addLight(scene, initLight(point3(25, 0, 25), color3(1, 1, 1)));
 
 	addObject( scene, initCylinder(vec3(1,0,0),point3(0,10,10),3,20, mat));
 	addObject( scene, initCylinder(vec3(1,0,0),point3(0,-10,10),3,20, mat));
 	addObject( scene, initCylinder(vec3(1,0,0),point3(0,10,-10),3,20, mat));
 	addObject( scene, initCylinder(vec3(1,0,0),point3(0,-10,-10),3,20, mat));
 	mat.diffuseColor = color3(0.03, 0.3, 0.03);
-	addObject( scene, initSphere(point3(0,0,0),60, mat));
+	//addObject( scene, initSphere(point3(0,0,0),60, mat));
+	mat.diffuseColor = color3(1, 1, 0);
+	addObject( scene, initPlane(point3(1,0,0),15, mat));
+	mat.diffuseColor = color3(1, 0, 1);
+	addObject( scene, initPlane(point3(0,1,0),15, mat));
+	mat.diffuseColor = color3(0, 1, 1);
+	addObject( scene, initPlane(point3(0,0,1),15, mat));
 	mat.diffuseColor = color3(0.03, 0.03, 0.3);
 	addObject( scene, initCylinder(vec3(0,1,1),point3(0,0,0),2,38, mat));
 	addObject( scene, initCylinder(vec3(0,1,-1),point3(0,0,0),2,38, mat));
+
+	 mat.diffuseColor = color3(1, 0.647, 0);
+	//mat.diffuseColor = color3(0, .9,0);
+	addObject( scene, initCone(point3(0,5,0), point3(0,15,0),M_PI/8, mat));
+	addObject( scene, initCone(point3(0,0,5), point3(0,0,15),M_PI/8, mat));
+	addObject( scene, initCone(point3(0,-5,0), point3(0,-15,0),M_PI/8, mat));
+	addObject( scene, initCone(point3(0,0,-5), point3(0,0,-15),M_PI/8, mat));
 	mat.IOR = 10;
-	mat.diffuseColor = color3(0, 0, 0);
+	mat.diffuseColor = color3(0.3, 0.9, 0.1);
 	addObject( scene, initSphere(point3(0,0,0),5, mat));
 	return scene;
 }

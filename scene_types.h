@@ -26,14 +26,14 @@ typedef struct geometry_s {
 	//anonymous union of structures to stores object data
 	union {
 		struct {
-				// sphere
-				vec3 center;
-				float radius;
+			// sphere
+			vec3 center;
+			float radius;
 		} sphere;
 		struct {
-				// plan
-				vec3 normal;
-				float dist;
+			// plan
+			vec3 normal;
+			float dist;
 		} plane;
 		struct {
 			// cylinder
@@ -43,11 +43,11 @@ typedef struct geometry_s {
 			float radius;
 		} cylinder;
 		struct {
-			// triangle
-			point3 a;
-			point3 b;
-			point3 c;
-		}triangle;
+			// cone
+			point3 top;
+			vec3 base;
+			float alpha;
+		} cone;
 	};
 } Geometry;
 

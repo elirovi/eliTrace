@@ -17,11 +17,11 @@ typedef struct intersection_s {
 // is stored in the parameter intersection
 // Possible intersection are considered only between ray->tmin and ray->tmax
 // ray->tmax is updated during this process
-bool intersectScene(const Scene *scene, Ray *ray, Intersection *intersection );
-bool intersectCylinder (Ray *ray, Intersection *intersection, Object *cylinder);
+bool intersectScene(const Scene *scene, Ray *ray, Intersection *intersection);
+bool intersectCone(Ray *ray, Intersection *intersection, Object *cone);
+bool intersectCylinder(Ray *ray, Intersection *intersection, Object *cylinder);
 bool intersectPlane(Ray *ray, Intersection *intersection, Object *plane);
 bool intersectSphere(Ray *ray, Intersection *intersection, Object *sphere);
-bool intersectTriangle(point3 a, point3 b, point3 c);
 
 void renderImage(Image *img, Scene *scene);
 

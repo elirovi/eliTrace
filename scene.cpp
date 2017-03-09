@@ -35,13 +35,13 @@ Object* initCylinder(vec3 direction, point3 center, float radius, float length, 
     return ret;
 }
 
-Object* initTriangle(point3 a, point3 b, point3 c, Material mat){
+Object* initCone(point3 top, point3 base, float alpha, Material mat){
     Object *ret;
     ret=(Object*)malloc(sizeof(Object));
-    ret->geom.type=TRIANGLE;
-    ret->geom.triangle.a=a;
-    ret->geom.triangle.b=b;
-    ret->geom.triangle.c=c;
+    ret->geom.type=CONE;
+    ret->geom.cone.top=top;
+    ret->geom.cone.base=base;
+    ret->geom.cone.alpha=alpha;
     memcpy(&(ret->mat),&mat,sizeof(Material));
     return ret;
 }
