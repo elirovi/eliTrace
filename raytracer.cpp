@@ -6,7 +6,7 @@
 #include <stdio.h>
 float pi=M_PI;
 float IOR=1;
-#define ANTIA 3.f
+#define ANTIA 2.f
 #define TMAX 100000
 
 /// acne_eps is a small constant used to prevent acne when computing intersection
@@ -15,17 +15,16 @@ const float acne_eps = 1e-4;
 
 bool intersectPlane(Ray *ray, Intersection *intersection, Object *obj) {
 	//! \todo : compute intersection of the ray and the plane object
-	vec3 n=obj->geom.plane.normal;
-	vec3 d=ray->dir;
-	if(dot(n,d)==0)
+	if(dot(obj->geom.plane.normal,ray->dir)==0)
 		return false;
-	float t= -(dot(n,ray->orig)+obj->geom.plane.dist)/dot(n,d);
+	float t= -(dot(obj->geom.plane.normal,ray->orig)+obj->geom.plane.dist)/dot(obj->geom.plane.normal,ray->dir);
 	if(t<=ray->tmin || t>ray->tmax)
 		return false;
 	ray->tmax=t;
-	intersection->normal=n;
+	point3 p=rayAt(*ray,t);
+	intersection->normal=(dot(obj->geom.plane.normal,ray->orig-p)>0)?obj->geom.plane.normal:-obj->geom.plane.normal;//mettre le vecteur normal du bon coté
 	intersection->mat=&(obj->mat);
-	intersection->position=rayAt(*ray,t);
+	intersection->position=p;
 	return true;
 }
 
@@ -272,8 +271,8 @@ color3 trace_ray(Scene * scene, Ray *ray, KdTree *tree) {
 	color3 ret = scene->skyColor;
 	Intersection intersection;
 	if(intersectScene(scene, ray, &intersection)){
-		//if(intersection.mat->diffuseColor==color3(0.03, 0.3, 0.03))
-		//	return intersection.normal;
+		if(intersection.mat->IOR==5040)
+			return intersection.normal;
 		ret=color3(0.f);
 		point3 P=intersection.position;
 		for(unsigned int i=0;i<scene->lights.size();i++){
